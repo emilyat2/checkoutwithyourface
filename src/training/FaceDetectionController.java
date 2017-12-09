@@ -1,5 +1,22 @@
 package training;
 
+/**.
+ * The program to be run.
+ * The main class for the JavaFX frame for the face Detection program.
+ * This creates the main window, provides a button to switch on the camera
+ * and display the video stream.
+ * @author checkoutwithyourface group members
+ * @see https://github.com/opencv-java/face-detection
+ */
+
+/**.
+ * Libraries Imported
+ * (1) JavaFX - handles the application layout and functioning
+ * (2) OpenCV - Java version of the C++ computer vision library
+ * (3) Java.util - the Java collections framework
+ */
+
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -24,60 +41,96 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
+
+/**
+ * The main class: FaceDetectionController
+ */
+
+
 public class FaceDetectionController {
+	
+	// the FXML camera button
 	@FXML
 	private Button cameraButton;
+	
+	// the FXML save button
 	@FXML
 	private Button saveButton;
+	
+	// the FXML text field that saves the name
 	@FXML
 	private TextField name;
+	
+	// the FXML image view
 	@FXML
 	private ImageView originalFrame;
+	
+	 // Classifier for human faces
 	@FXML
-	private CheckBox haarClassifier; // for human faces
+	private CheckBox haarClassifier;
+	
+	 // Classifier for other stuff like silverware
 	@FXML
-	private CheckBox lbpClassifier; // for cats and stuff
+	private CheckBox lbpClassifier;
 	
 	// Video input timer and capture
+	
+	// A timer for acquiring the video stream
 	private ScheduledExecutorService timer;
+	// the OpenCV object that realizes the video capture
 	private VideoCapture capture;
+	// a flag that contains camera state
 	private boolean cameraActive;
 	
 	private CascadeClassifier faceCascade;
 	private int absoluteFaceSize;
 
-	// start the controller
+	/**.
+	 * Function to start the controller
+	 * 
+	 */
 	protected void init() {
+		// Initialize new objects
 		this.capture = new VideoCapture();
 		this.faceCascade = new CascadeClassifier();
 		this.absoluteFaceSize = 0;
-		// set frame
+		
+		// Set frame
 		originalFrame.setFitWidth(600);
 		originalFrame.setPreserveRatio(true);
 	}
 	
-	// Implementation of start button in FXML
+	/**.
+	 * Function which implements function
+	 * of start button in FXML
+	 */
 	@FXML
 	protected void startCamera() {
+		
 		if (!this.cameraActive) {
 			this.haarClassifier.setDisable(true);
 			this.lbpClassifier.setDisable(true);
 			this.saveButton.setDisable(false);
-			// start the camera
+			
+			// Start the camera
 			this.capture.open(0);
 			if (!this.capture.isOpened()) {
 				this.cameraActive = false;
 				System.err.println("Camera Connection Failed");
+				
 			} else {
-				// update frame with time
+				// Update frame with time
 				this.cameraActive = true;
 				Runnable frameGrabber = new Runnable() {
+					
 					public void run() {
 						Mat frame = grabFrame();
 						Image imageToShow = Utils.mat2Image(frame);
 						updateImageView(originalFrame, imageToShow);
 					}
+					
 				};
+				
 				this.timer = Executors.newSingleThreadScheduledExecutor();
 				this.timer.scheduleAtFixedRate(frameGrabber, 0, 60, TimeUnit.MILLISECONDS);
 				this.cameraButton.setText("Stop Camera");
@@ -93,7 +146,11 @@ public class FaceDetectionController {
 			this.stopAcquisition();
 		}
 	}
-
+	
+	/**.
+	 * Function implementing the function
+	 * of the save button in FXML
+	 */
 	@FXML
 	protected void save() {
 		if (cameraActive) {
@@ -104,6 +161,10 @@ public class FaceDetectionController {
 		}
 	}
 	
+	/**.
+	 * Function that grabs each frame
+	 * @return
+	 */
 	private Mat grabFrame() {
 		Mat frame = new Mat();
 		if (this.capture.isOpened()) {
@@ -114,7 +175,11 @@ public class FaceDetectionController {
 		}
 		return frame;
 	}
-
+	/**.
+	 * Function that detects a face
+	 * and draws a square around it
+	 * @param frame
+	 */
 	private void detectAndDisplay(Mat frame) {
 		MatOfRect faces = new MatOfRect();
 		Mat grayFrame = new Mat();
@@ -133,7 +198,12 @@ public class FaceDetectionController {
 			Imgproc.rectangle(frame, facesArray[i].tl(), facesArray[i].br(), new Scalar(255, 255, 0), 3);
 		}
 	}
-
+	
+	/**.
+	 * Function that implements the function of
+	 * the haarClassifier button
+	 * @param event
+	 */
 	@FXML
 	protected void haarSelected(Event event) {
 		if (this.lbpClassifier.isSelected()) {
@@ -141,7 +211,12 @@ public class FaceDetectionController {
 		}
 		this.checkboxSelection("resources/haarcascades/haarcascade_frontalface_alt.xml");
 	}
-
+	
+	/**.
+	 * Function that implements the function of
+	 * the lbpClassifier button
+	 * @param event
+	 */
 	@FXML
 	protected void lbpSelected(Event event) {
 		if (this.haarClassifier.isSelected()) {
@@ -149,12 +224,21 @@ public class FaceDetectionController {
 		}
 		this.checkboxSelection("resources/lbpcascades/lbpcascade_frontalface.xml");
 	}
-
+	
+	/**.
+	 * Function implementing another specific function
+	 * depending on checkbox selection
+	 * @param classifier
+	 */
 	private void checkboxSelection(String classifier) {
 		this.faceCascade.load(classifier);
 		this.cameraButton.setDisable(false);
 	}
-
+	
+	/**.
+	 * Function to stop taking in video stream
+	 * through camera
+	 */
 	private void stopAcquisition() {
 		if (this.timer != null && !this.timer.isShutdown()) {
 			try {
@@ -169,6 +253,12 @@ public class FaceDetectionController {
 		}
 	}
 
+	/**.
+	 * Function to update each frame into
+	 * the ImageView
+	 * @param view
+	 * @param image
+	 */
 	private void updateImageView(ImageView view, Image image) {
 		Utils.onFXThread(view.imageProperty(), image);
 	}
